@@ -64,28 +64,55 @@ char editorReadKey() {
     if (nread == -1 && errno != EAGAIN)
       die("read");
   }
-  return c;
+
+  if (c == '\x1b') { // if character is escape sequence
+    char seq[3];
+
+    // read 2 more bytes into buffer
+    if (read(STDIN_FILENO, &seq[0], 1) != 1)
+      return '\x1b';
+    if (read(STDIN_FILENO, &seq[1], 1) != 1)
+      return '\x1b';
+
+    if (seq[0] == '[') { // if starts with [
+      switch (seq[1]) {
+      case 'A': // up arrow
+        return 'w';
+      case 'B': // down arrow
+        return 's';
+      case 'C': // right arrow
+        return 'd';
+      case 'D': // left arrow
+        return 'a';
+      }
+    }
+    return '\x1b';
+  } else {
+    return c;
+  }
 }
 
 int getCursorPosition(int *rows, int *cols) {
   char buf[32];
   unsigned int i = 0;
 
+  // return pos of cursor
   if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
     return -1;
 
-  while (i < sizeof(buf) - 1) {
+  // expected message is smth like \x1b[5;10R
+  while (i < sizeof(buf) - 1) { // read message into buffer
     if (read(STDIN_FILENO, &buf[i], 1) != 1)
       break;
-    if (buf[i] == 'R')
+    if (buf[i] == 'R') // if get R then break cause its eof
       break;
     i++;
   }
-  buf[i] = '\0';
+  buf[i] = '\0'; // terminate buffer
 
-  if (buf[0] != '\x1b' || buf[1] != '[')
+  if (buf[0] != '\x1b' || buf[1] != '[') // if format is somehow wrong
     return -1;
-  if (sscanf(&buf[2], "%d;%d", rows, cols) != 2)
+  if (sscanf(&buf[2], "%d;%d", rows, cols) != 2) // get ints out of buffer
     return -1;
 
   return 0;
