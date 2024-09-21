@@ -145,9 +145,10 @@ struct abuf {
 #define ABUF_INIT {NULL, 0}
 
 void abAppend(struct abuf *ab, const char *s, int len) {
+  // allocate new mem for expanded string
   char *new = realloc(ab->b, ab->len + len);
 
-  if (new == NULL)
+  if (new == NULL) // if realloc failed, return
     return;
   memcpy(&new[ab->len], s, len);
   ab->b = new;
@@ -159,8 +160,8 @@ void abFree(struct abuf *ab) { free(ab->b); }
 /* output */
 void editorDrawRows(struct abuf *ab) {
   int y;
-  for (y = 0; y < E.screenrows; y++) {
-    if (y == E.screenrows / 3) {
+  for (y = 0; y < E.screenrows; y++) { // for every row
+    if (y == E.screenrows / 3) {       // if row is third down monitor
       char welcome[80];
       int welcomelen = snprintf(welcome, sizeof(welcome),
                                 "Marka editor -- version %s", MARKA_VERSION);
@@ -174,11 +175,11 @@ void editorDrawRows(struct abuf *ab) {
       while (padding--)
         abAppend(ab, " ", 1);
       abAppend(ab, welcome, welcomelen);
-    } else {
+    } else { // if not welcome message row
       abAppend(ab, "~", 1);
     }
 
-    abAppend(ab, "\x1b[K", 3);
+    abAppend(ab, "\x1b[K", 3); // clear line currenlty operating on
     if (y < E.screenrows - 1) {
       abAppend(ab, "\r\n", 2);
     }
@@ -186,20 +187,21 @@ void editorDrawRows(struct abuf *ab) {
 }
 
 void editorRefreshScreen() {
-  struct abuf ab = ABUF_INIT;
+  struct abuf ab = ABUF_INIT; // make new abuf
 
-  abAppend(&ab, "\x1b[?25l", 6);
-  abAppend(&ab, "\x1b[H", 3);
+  abAppend(&ab, "\x1b[?25l", 6); // hide cursor
+  abAppend(&ab, "\x1b[H", 3);    // cursor to 1,1
 
   editorDrawRows(&ab);
 
   char buf[32];
+  // cursor to cx and cy
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
   abAppend(&ab, buf, strlen(buf));
 
-  abAppend(&ab, "\x1b[?25h", 6);
+  abAppend(&ab, "\x1b[?25h", 6); // show cursor
 
-  write(STDOUT_FILENO, ab.b, ab.len);
+  write(STDOUT_FILENO, ab.b, ab.len); // write to screen
   abFree(&ab);
 }
 
@@ -226,7 +228,7 @@ void editorProcessKeypress() {
   char c = editorReadKey();
 
   switch (c) {
-  case CTRL_KEY('q'):
+  case CTRL_KEY('q'): // case CTRL+Q
     write(STDOUT_FILENO, "\x1b[2J", 4);
     write(STDOUT_FILENO, "\x1b[H", 3);
     exit(0);
