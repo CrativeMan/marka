@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g -Wno-unused-parameter -Wno-unused-result
+CFLAGS = -Wall -Wextra -pedantic -std=c99
 SRCS = main.c
 OBJS = $(SRCS:.c=.o)
 TARGET = main
