@@ -1,30 +1,42 @@
 /* includes */
-#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
+/* defines */
+#define CTRL_KEY(k) ((k) & 0x1f)
+
 /* data */
-struct termios orig_termios;
+struct editorConfig {
+  int screenrows;
+  int screencols;
+  struct termios orig_termios;
+};
+
+struct editorConfig E;
 
 /* terminal */
 void die(const char *s) {
-    perror(s);
-    exit(1);
+  write(STDOUT_FILENO, "\x1b[2J", 4);
+  write(STDOUT_FILENO, "\x1b[H", 3);
+  perror(s);
+  exit(1);
 }
 
 void disableRawMode() {
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH,
-            &orig_termios) == -1) die("tcsetattr"); // flush original terminal sttings
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1)
+    die("tcsetattr"); // flush original terminal sttings
 }
 
 void enableRawMode() {
-  if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) die("tcgetattr");
+  if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1)
+    die("tcgetattr");
   atexit(disableRawMode); // run at exit
 
-  struct termios raw = orig_termios;
+  struct termios raw = E.orig_termios;
   raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
   // turn off output processing
   raw.c_oflag &= ~(OPOST);
@@ -38,23 +50,75 @@ void enableRawMode() {
   // max num of time to wait before read times out
   raw.c_cc[VTIME] = 1;
 
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
+    die("tcsetattr");
+}
+
+char editorReadKey() {
+  int nread;
+  char c;
+  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+    if (nread == -1 && errno != EAGAIN)
+      die("read");
+  }
+  return c;
+}
+
+int getWindowSize(int *rows, int *cols) {
+  struct winsize ws;
+
+  // get the window szie and if it fails or the window width is 0 return -1
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+    return -1;
+  } else {
+    *cols = ws.ws_col;
+    *rows = ws.ws_row;
+    return 0;
+  }
+}
+
+/* output */
+void editorDrawRows() {
+  int y;
+  for (y = 0; y < E.screenrows; y++) {
+    write(STDOUT_FILENO, "~\r\n", 3);
+  }
+}
+
+void editorRefreshScreen() {
+  write(STDOUT_FILENO, "\x1b[2J", 4);
+  write(STDOUT_FILENO, "\x1b[H", 3);
+  editorDrawRows();
+  write(STDOUT_FILENO, "\x1b[H", 3);
+}
+
+/* input */
+
+void editorProcessKeypress() {
+  char c = editorReadKey();
+
+  switch (c) {
+  case CTRL_KEY('q'):
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+    exit(0);
+    break;
+  }
 }
 
 /* init */
+void initEditor() {
+  if (getWindowSize(&E.screenrows, &E.screencols) == -1)
+    die("getWindowSiza");
+}
 
 int main(int argc, char **argv) {
   enableRawMode();
+  initEditor();
 
   while (1) {
-    char c;
-    if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN) die("read");
-    if (iscntrl(c)) {
-      printf("%d\r\n", c);
-    } else {
-      printf("%d ('%c')\r\n", c, c);
-    }
-    if (c == 'q') break;
+    editorRefreshScreen();
+    editorProcessKeypress();
   }
   return 0;
 }
