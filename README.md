@@ -1,3 +1,3 @@
 Marka
 Cli Markdown editor
-based on (https://viewsourcecode.org/snaptoken/kilo/)[kilo]
+based on (kilo)[https://viewsourcecode.org/snaptoken/kilo/]
