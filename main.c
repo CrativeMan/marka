@@ -252,6 +252,15 @@ void abFree(struct abuf *ab) { free(ab->b); }
 
 /* output */
 
+void editorScroll() {
+  if (E.cy < E.rowoff) { // if cursor is above visible window
+    E.rowoff = E.cy;
+  }
+  if (E.cy >= E.rowoff + E.screenrows) { // if cursors is past the botom
+    E.rowoff = E.cy - E.screenrows + 1;
+  }
+}
+
 void editorDrawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < E.screenrows; y++) { // for every row
@@ -290,6 +299,7 @@ void editorDrawRows(struct abuf *ab) {
 }
 
 void editorRefreshScreen() {
+  editorScroll();
   struct abuf ab = ABUF_INIT; // make new abuf
 
   abAppend(&ab, "\x1b[?25l", 6); // hide cursor
@@ -325,7 +335,7 @@ void editorMoveCursor(int key) {
       E.cy--;
     break;
   case ARROW_DOWN:
-    if (E.cy != E.screenrows - 1)
+    if (E.cy < E.numrows)
       E.cy++;
     break;
   }
