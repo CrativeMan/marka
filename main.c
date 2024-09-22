@@ -11,6 +11,13 @@
 #define MARKA_VERSION "0.1"
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+enum editorKey {
+  ARROW_LEFT = 'a',
+  ARROW_RIGHT = 'd',
+  ARROW_UP = 'w',
+  ARROW_DOWN = 's'
+}
+
 /* data */
 struct editorConfig {
   int cx, cy;
@@ -77,13 +84,13 @@ char editorReadKey() {
     if (seq[0] == '[') { // if starts with [
       switch (seq[1]) {
       case 'A': // up arrow
-        return 'w';
+        return ARROW_UP;
       case 'B': // down arrow
-        return 's';
+        return ARROW_DOWN;
       case 'C': // right arrow
-        return 'd';
+        return ARROW_RIGHT;
       case 'D': // left arrow
-        return 'a';
+        return ARROW_LEFT;
       }
     }
     return '\x1b';
