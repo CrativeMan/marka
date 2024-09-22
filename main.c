@@ -11,12 +11,7 @@
 #define MARKA_VERSION "0.1"
 #define CTRL_KEY(k) ((k) & 0x1f)
 
-enum editorKey {
-  ARROW_LEFT = 'a',
-  ARROW_RIGHT = 'd',
-  ARROW_UP = 'w',
-  ARROW_DOWN = 's'
-}
+enum editorKey { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
 
 /* data */
 struct editorConfig {
@@ -64,7 +59,7 @@ void enableRawMode() {
     die("tcsetattr");
 }
 
-char editorReadKey() {
+int editorReadKey() {
   int nread;
   char c;
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
@@ -214,25 +209,29 @@ void editorRefreshScreen() {
 
 /* input */
 
-void editorMoveCursor(char key) {
+void editorMoveCursor(int key) {
   switch (key) {
-  case 'a':
-    E.cx--;
+  case ARROW_LEFT:
+    if (E.cx != 0)
+      E.cx--;
     break;
-  case 'd':
-    E.cx++;
+  case ARROW_RIGHT:
+    if (E.cx != E.screencols - 1)
+      E.cx++;
     break;
-  case 'w':
-    E.cy--;
+  case ARROW_UP:
+    if (E.cy != 0)
+      E.cy--;
     break;
-  case 's':
-    E.cy++;
+  case ARROW_DOWN:
+    if (E.cy != E.screenrows - 1)
+      E.cy++;
     break;
   }
 }
 
 void editorProcessKeypress() {
-  char c = editorReadKey();
+  int c = editorReadKey();
 
   switch (c) {
   case CTRL_KEY('q'): // case CTRL+Q
@@ -241,10 +240,10 @@ void editorProcessKeypress() {
     exit(0);
     break;
 
-  case 'w':
-  case 's':
-  case 'a':
-  case 'd':
+  case ARROW_UP:
+  case ARROW_DOWN:
+  case ARROW_LEFT:
+  case ARROW_RIGHT:
     editorMoveCursor(c);
     break;
   }
