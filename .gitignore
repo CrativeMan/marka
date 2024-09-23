@@ -1,4 +1,5 @@
 main
 marka
 .direnv/
+.result/
 *.o

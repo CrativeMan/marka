@@ -24,12 +24,28 @@
         devShell = mkShell.override { stdenv = clangStdenv; } {
           packages = [
             clang-tools
-llvmPackages.clangUseLLVM
-gcc
-clang
-cmake
+            llvmPackages.clangUseLLVM
+            gcc
+            clang
+            cmake
 
           ];
+        };
+
+        defaultPackage = stdenv.mkDerivation {
+          name = "marka";
+          src = ./.;
+          buildInputs = [ gcc ];
+          buildPhase = ''
+            mkdir -p build
+            make
+            cp main build/marka
+          '';
+          installPhase = ''
+            mkdir -p $out/bin
+            cp build/marka $out/bin/
+          '';
+
         };
       }
     );
