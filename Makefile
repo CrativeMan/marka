@@ -1,16 +1,18 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -std=c99
-SRCS = main.c
-OBJS = $(SRCS:.c=.o)
-TARGET = main
+LDFLAGS = 
+SRCDIR = src
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(patsubst $(SRCDIR)/%.c, %.o, $(SRCS))
+TARGET = marka
 
 all: $(TARGET)
 
-%.o: %.c
+%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)

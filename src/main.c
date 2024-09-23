@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 /* defines */
-#define MARKA_VERSION "0.1"
+#define MARKA_VERSION "1.0"
 #define MARKA_TAB_STOP 2
 #define MARKA_QUIT_TIMES 3
 #define CTRL_KEY(k) ((k) & 0x1f)

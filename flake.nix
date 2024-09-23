@@ -39,7 +39,7 @@
           buildPhase = ''
             mkdir -p build
             make
-            cp main build/marka
+            cp marka build/marka
           '';
           installPhase = ''
             mkdir -p $out/bin
