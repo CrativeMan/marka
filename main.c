@@ -200,6 +200,18 @@ int getWindowSize(int *rows, int *cols) {
 }
 
 /* row operations */
+int editorRowCxToRx(erow *row, int cx) {
+  int rx = 0;
+  int j;
+  for (j = 0; j < cx; j++) {
+    if (row->chars[j] == '\t')
+      rx += (MARKA_TAB_STOP - 1) - (rx % MARKA_TAB_STOP);
+    rx++;
+  }
+
+  return rx;
+}
+
 void editorUpdateRow(erow *row) {
   int tabs = 0;
   int j;
@@ -288,8 +300,9 @@ void abFree(struct abuf *ab) { free(ab->b); }
 /* output */
 
 void editorScroll() {
-  if (E.cy < E.rowoff) { // if cursor is above visible window
-    E.rowoff = E.cy;
+  E.rx = 0;
+  if (E.cy < E.numrows) { // if cursor is above visible window
+    E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
   }
   if (E.cy >= E.rowoff + E.screenrows) { // if cursors is past the botom
     E.rowoff = E.cy - E.screenrows + 1;
@@ -415,15 +428,23 @@ void editorProcessKeypress() {
     break;
 
   case END_KEY:
-    E.cx = E.screencols - 1;
+    if (E.cy < E.numrows)
+      E.cx = E.row[E.cy].size;
     break;
 
   case PAGE_UP:
   case PAGE_DOWN: { // move c up or down as many tms as needed
-    int times = E.screenrows;
-    while (times--) {
-      editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+    if (c == PAGE_UP) {
+      E.cy = E.rowoff;
+    } else if (c == PAGE_DOWN) {
+      E.cy = E.rowoff + E.screenrows - 1;
+      if (E.cy > E.numrows)
+        E.cy = E.numrows;
     }
+
+    int times = E.screenrows;
+    while (times--)
+      editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
   } break;
 
   case ARROW_UP:
