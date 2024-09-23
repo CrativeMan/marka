@@ -3,3 +3,4 @@ marka
 .direnv/
 .result/
 *.o
+result
