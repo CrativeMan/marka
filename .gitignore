@@ -4,3 +4,6 @@ peb
 .result/
 *.o
 result
+test
+test.txt
+test.md
