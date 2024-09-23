@@ -33,17 +33,17 @@
         };
 
         defaultPackage = stdenv.mkDerivation {
-          name = "marka";
+          name = "peb";
           src = ./.;
           buildInputs = [ gcc ];
           buildPhase = ''
             mkdir -p build
             make
-            cp marka build/marka
+            cp peb build/peb
           '';
           installPhase = ''
             mkdir -p $out/bin
-            cp build/marka $out/bin/
+            cp build/peb $out/bin/
           '';
 
         };

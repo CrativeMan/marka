@@ -4,7 +4,7 @@ LDFLAGS =
 SRCDIR = src
 SRCS = $(wildcard $(SRCDIR)/*.c)
 OBJS = $(patsubst $(SRCDIR)/%.c, %.o, $(SRCS))
-TARGET = marka
+TARGET = peb
 
 all: $(TARGET)
 

@@ -17,9 +17,9 @@
 #include <unistd.h>
 
 /* defines */
-#define MARKA_VERSION "1.0"
-#define MARKA_TAB_STOP 2
-#define MARKA_QUIT_TIMES 3
+#define PEB_VERSION "1.0"
+#define PEB_TAB_STOP 2
+#define PEB_QUIT_TIMES 3
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 enum editorKey {
@@ -223,7 +223,7 @@ int editorRowCxToRx(erow *row, int cx) {
   int j;
   for (j = 0; j < cx; j++) {
     if (row->chars[j] == '\t')
-      rx += (MARKA_TAB_STOP - 1) - (rx % MARKA_TAB_STOP);
+      rx += (PEB_TAB_STOP - 1) - (rx % PEB_TAB_STOP);
     rx++;
   }
 
@@ -240,13 +240,13 @@ void editorUpdateRow(erow *row) {
 
   free(row->render); // free mem off prev render
   // allocate new mem for render
-  row->render = malloc(row->size + tabs * (MARKA_TAB_STOP - 1) + 1);
+  row->render = malloc(row->size + tabs * (PEB_TAB_STOP - 1) + 1);
 
   int idx = 0;
   for (j = 0; j < row->size; j++) {
     if (row->chars[j] == '\t') { // if tab print TAB_STOP chars
       row->render[idx++] = ' ';
-      while (idx % MARKA_TAB_STOP != 0)
+      while (idx % PEB_TAB_STOP != 0)
         row->render[idx++] = ' ';
     } else {
       row->render[idx++] = row->chars[j];
@@ -488,7 +488,7 @@ void editorDrawRows(struct abuf *ab) {
           y == E.screenrows / 3) { // if row is third down monitor draw welcmmsg
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome),
-                                  "Marka editor -- version %s", MARKA_VERSION);
+                                  "peb editor -- version %s", PEB_VERSION);
         if (welcomelen > E.screencols)
           welcomelen = E.screencols;
         int padding = (E.screencols - welcomelen) / 2;
@@ -655,7 +655,7 @@ void editorMoveCursor(int key) {
 }
 
 void editorProcessKeypress() {
-  static int quit_times = MARKA_QUIT_TIMES;
+  static int quit_times = PEB_QUIT_TIMES;
   int c = editorReadKey();
 
   switch (c) {
@@ -726,7 +726,7 @@ void editorProcessKeypress() {
     break;
   }
 
-  quit_times = MARKA_QUIT_TIMES;
+  quit_times = PEB_QUIT_TIMES;
 }
 
 /* init */
