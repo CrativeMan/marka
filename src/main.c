@@ -65,6 +65,7 @@ struct editorConfig E;
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
+void editorMoveCursor(int key);
 
 /* terminal */
 void die(const char *s) {
@@ -486,9 +487,21 @@ void editorFindCallback(char *query, int key) {
     char *match = strstr(row->render, query);
     if (match) {
       last_match = current;
-      E.cy = current;
+      int yOff = current;
+      int curY = E.cy;
+      if (yOff > curY) {
+          while (yOff) {
+              editorMoveCursor(ARROW_DOWN);
+              yOff--;
+          }
+      } else if (curY > yOff) {
+          while(curY) {
+              editorMoveCursor(ARROW_UP);
+              curY--;
+          }
+      }
       E.cx = editorRowRxToCx(row, match - row->render);
-      E.rowoff = i;
+      
       break;
     }
   }
