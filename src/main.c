@@ -87,14 +87,30 @@ void enableRawMode() {
 }
 
 /* syntax highlighting */
+int is_seperator(int c) {
+  return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
+
 void editorUpdateSyntax(erow *row) {
   row->hl = realloc(row->hl, row->rsize);
   memset(row->hl, HL_NORMAL, row->size);
 
-  int i;
-  for (i = 0; i < row->size; i++) {
-    if (isdigit(row->render[i]))
+  int prev_sep = 1;
+
+  int i = 0;
+  while (i < row->size) {
+    char c = row->render[i];
+    unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+
+    if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
+        (c == '.' && prev_hl == HL_NUMBER)) {
       row->hl[i] = HL_NUMBER;
+      i++;
+      prev_sep = 0;
+      continue;
+    }
+    prev_sep = is_seperator(c);
+    i++;
   }
 }
 
@@ -358,6 +374,15 @@ void editorFindCallback(char *query, int key) {
   static int last_match = -1;
   static int direction = 1;
 
+  static int saved_hl_line;
+  static char *saved_hl = NULL;
+
+  if (saved_hl) {
+    memcpy(E.row[saved_hl_line].hl, saved_hl, E.row[saved_hl_line].rsize);
+    free(saved_hl);
+    saved_hl = NULL;
+  }
+
   if (key == '\r' || key == '\x1b') {
     last_match = -1;
     direction = 1;
@@ -401,6 +426,9 @@ void editorFindCallback(char *query, int key) {
       }
       E.cx = editorRowRxToCx(row, match - row->render);
 
+      saved_hl_line = current;
+      saved_hl = malloc(row->size);
+      memcpy(saved_hl, row->hl, row->size);
       memset(&row->hl[match - row->render], HL_MATCH, strlen(query));
       break;
     }
