@@ -101,6 +101,7 @@ int editorRowCxToRx(erow *row, int cx) {
   return rx;
 }
 
+// convert render position to cursor pos by reversing the added chars for tabs
 int editorRowRxToCx(erow *row, int rx) {
   int cur_rx = 0;
   int cx;
@@ -396,7 +397,6 @@ void editorFind() {
 }
 
 /* append buffer */
-
 struct abuf {
   char *b;
   int len;
