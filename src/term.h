@@ -1,6 +1,8 @@
 #ifndef TERM_H
 #define TERM_H
 
+enum editorHighlight { HL_NORMAL = 0, HL_NUMBER, HL_MATCH };
+
 enum editorKey {
   BACKSPACE = 127,
   ARROW_LEFT = 1000,
