@@ -69,12 +69,13 @@ struct editorConfig E;
 
 /* filetypes */
 char *C_HL_EXTENSIONS[] = {".c", ".h", ".cpp", NULL}; // c highlight extension
-char *C_HL_KEYWORDS[] = {"switch",    "if",      "while",   "for",    "break",
-                         "continue",  "return",  "else",    "struct", "union",
-                         "typedef",   "static",  "enum",    "class",  "case",
+char *C_HL_KEYWORDS[] = {
+    "switch",  "if",    "while",   "for",      "break",   "continue",
+    "return",  "else",  "struct",  "union",    "typedef", "static",
+    "enum",    "class", "case",
 
-                         "int|",      "long|",   "double|", "float|", "char|",
-                         "unsigned|", "signed|", "void|",   NULL};
+    "int|",    "long|", "double|", "float|",   "char|",   "unsigned|",
+    "signed|", "void|", "#define", "#include", NULL};
 
 // HLDB = highlight database
 struct editorSyntax HLDB[] = {
