@@ -1,7 +1,15 @@
 #ifndef TERM_H
 #define TERM_H
 
-enum editorHighlight { HL_NORMAL = 0, HL_STRING, HL_NUMBER, HL_MATCH };
+enum editorHighlight {
+  HL_NORMAL = 0,
+  HL_COMMENT,
+  HL_KEYWORD1,
+  HL_KEYWORD2,
+  HL_STRING,
+  HL_NUMBER,
+  HL_MATCH
+};
 
 enum editorKey {
   BACKSPACE = 127,
