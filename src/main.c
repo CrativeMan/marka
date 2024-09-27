@@ -21,7 +21,6 @@
 /* defines */
 #define PEB_VERSION "1.0"
 #define PEB_TAB_STOP 2
-#define PEB_QUIT_TIMES 3
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 #define HL_HIGHLIGHT_NUMBERS (1 << 0)
@@ -91,6 +90,7 @@ void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void editorMoveCursor(int key);
+void editorSave();
 
 /* terminal */
 void disableRawMode() {
@@ -119,6 +119,40 @@ void enableRawMode() {
 
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
     die("tcsetattr");
+}
+
+/* editor command */
+void editorCommandCallback(char *query, int key) {
+  if (key == '\r') {
+    switch (query[0]) {
+    case 'w': {
+      editorSave();
+      if (query[1] == 'q') {
+        write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen
+        write(STDOUT_FILENO, "\x1b[H", 3);  // reset curser
+        exit(0);
+      }
+    } break;
+    case 'q': {
+      if (!E.dirty || query[1] == '!') {
+        write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen
+        write(STDOUT_FILENO, "\x1b[H", 3);  // reset curser
+        exit(0);
+      } else {
+        editorSetStatusMessage("File has unsaved changes. Use :q! to ignore.");
+      }
+    } break;
+    default:
+      printf("Unrecognized command.");
+      break;
+    }
+  }
+}
+
+void editorCommandPrompt() {
+  char *query = editorPrompt(":%s", editorCommandCallback);
+
+  free(query);
 }
 
 /* syntax highlighting */
@@ -739,7 +773,7 @@ void editorDrawRows(struct abuf *ab) {
 }
 
 void editorDrawStatusBar(struct abuf *ab) {
-  abAppend(ab, "\x1b[7m", 4);   // invert output
+  // abAppend(ab, "\x1b[7m", 4);   // invert output
   char status[80], rstatus[80]; // left and right status char*
   // get length's for status bar messages
   int len = snprintf(status, sizeof(status), "%.10s%.20s%s - %d lines",
@@ -853,6 +887,7 @@ void editorMoveCursor(int key) {
 
   switch (key) {
   case ARROW_LEFT:
+  case 'h':
     if (E.cx != 0) {
       E.cx--;
     } else if (E.cy > 0) {
@@ -861,6 +896,7 @@ void editorMoveCursor(int key) {
     }
     break;
   case ARROW_RIGHT:
+  case 'l':
     if (row && E.cx < row->size)
       E.cx++;
     else if (row && E.cx == row->size) {
@@ -869,10 +905,12 @@ void editorMoveCursor(int key) {
     }
     break;
   case ARROW_UP:
+  case 'k':
     if (E.cy != 0)
       E.cy--;
     break;
   case ARROW_DOWN:
+  case 'j':
     if (E.cy < E.numrows)
       E.cy++;
     break;
@@ -885,85 +923,126 @@ void editorMoveCursor(int key) {
 }
 
 void editorProcessKeypress() {
-  static int quit_times = PEB_QUIT_TIMES;
   int c = editorReadKey();
 
-  switch (c) {
-  case '\r':
-    editorInsertNewline();
-    break;
-  case CTRL_KEY('q'):
-    if (E.dirty && quit_times > 0) {
-      editorSetStatusMessage("File unsaved. Ctrl-Q %d more times to quit.",
-                             quit_times);
-      quit_times--;
-      return;
+  /* insert mode */
+  if (E.mode == INSERT) {
+    switch (c) {
+    case '\r':
+      editorInsertNewline();
+      break;
+
+    case CTRL_KEY('s'):
+      editorSave();
+      break;
+
+    case HOME_KEY:
+      E.cx = 0;
+      break;
+
+    case END_KEY:
+      if (E.cy < E.numrows)
+        E.cx = E.row[E.cy].size;
+      break;
+
+    case BACKSPACE:
+    case CTRL_KEY('h'):
+    case DEL_KEY:
+      if (c == DEL_KEY)
+        editorMoveCursor(ARROW_RIGHT);
+      editorDelChar();
+      break;
+
+    case PAGE_UP:
+    case PAGE_DOWN: { // move c up or down as many tms as needed
+      if (c == PAGE_UP) {
+        E.cy = E.rowoff;
+      } else if (c == PAGE_DOWN) {
+        E.cy = E.rowoff + E.screenrows - 1;
+        if (E.cy > E.numrows)
+          E.cy = E.numrows;
+      }
+
+      int times = E.screenrows;
+      while (times--)
+        editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+    } break;
+
+    case ARROW_UP:
+    case ARROW_DOWN:
+    case ARROW_LEFT:
+    case ARROW_RIGHT:
+      editorMoveCursor(c);
+      break;
+
+    case CTRL_KEY('l'):
+    case '\x1b':
+    case CTRL_KEY('c'):
+      E.mode = NORMAL;
+      break;
+
+    default:
+      editorInsertChar(c);
+      break;
+
+    case CTRL_KEY('p'):
+      break;
     }
-    write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen
-    write(STDOUT_FILENO, "\x1b[H", 3);  // reset curser
-    exit(0);
-    break;
+  } else if (E.mode == NORMAL) { /* normal mode */
+    switch (c) {
+    case '/':
+      editorFind();
+      break;
+    case ':':
+      editorCommandPrompt();
+      break;
+    case 'i':
+      E.mode = INSERT;
+      break;
 
-  case CTRL_KEY('s'):
-    editorSave();
-    break;
+    case HOME_KEY:
+      E.cx = 0;
+      break;
 
-  case HOME_KEY:
-    E.cx = 0;
-    break;
+    case END_KEY:
+      if (E.cy < E.numrows)
+        E.cx = E.row[E.cy].size;
+      break;
 
-  case END_KEY:
-    if (E.cy < E.numrows)
-      E.cx = E.row[E.cy].size;
-    break;
+    case PAGE_UP:
+    case PAGE_DOWN: { // move c up or down as many tms as needed
+      if (c == PAGE_UP) {
+        E.cy = E.rowoff;
+      } else if (c == PAGE_DOWN) {
+        E.cy = E.rowoff + E.screenrows - 1;
+        if (E.cy > E.numrows)
+          E.cy = E.numrows;
+      }
 
-  case CTRL_KEY('p'):
-    break;
+      int times = E.screenrows;
+      while (times--)
+        editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+    } break;
 
-  case CTRL_KEY('f'):
-    editorFind();
-    break;
+    case ARROW_UP:
+    case ARROW_DOWN:
+    case ARROW_LEFT:
+    case ARROW_RIGHT:
+    case 'h':
+    case 'j':
+    case 'k':
+    case 'l':
+      editorMoveCursor(c);
+      break;
 
-  case BACKSPACE:
-  case CTRL_KEY('h'):
-  case DEL_KEY:
-    if (c == DEL_KEY)
-      editorMoveCursor(ARROW_RIGHT);
-    editorDelChar();
-    break;
+    case CTRL_KEY('p'):
+      break;
 
-  case PAGE_UP:
-  case PAGE_DOWN: { // move c up or down as many tms as needed
-    if (c == PAGE_UP) {
-      E.cy = E.rowoff;
-    } else if (c == PAGE_DOWN) {
-      E.cy = E.rowoff + E.screenrows - 1;
-      if (E.cy > E.numrows)
-        E.cy = E.numrows;
+    case CTRL_KEY('l'):
+    case '\x1b':
+      break;
     }
-
-    int times = E.screenrows;
-    while (times--)
-      editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-  } break;
-
-  case ARROW_UP:
-  case ARROW_DOWN:
-  case ARROW_LEFT:
-  case ARROW_RIGHT:
-    editorMoveCursor(c);
-    break;
-
-  case CTRL_KEY('l'):
-  case '\x1b':
-    break;
-
-  default:
-    editorInsertChar(c);
-    break;
   }
-
-  quit_times = PEB_QUIT_TIMES;
 }
 
 /* init */
@@ -992,8 +1071,6 @@ int main(int argc, char **argv) {
   if (argc >= 2) {
     editorOpen(argv[1]);
   }
-
-  editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
 
   while (1) {
     editorRefreshScreen();
