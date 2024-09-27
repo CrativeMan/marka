@@ -1,7 +1,8 @@
 main
 peb
 .direnv/
-.result/
+result/
+obj/
 *.o
 result
 test
