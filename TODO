@@ -1,3 +1,4 @@
 * markdown to pdf 
 * line numbers
 * markdown syntax highlighting
+* BUG: fix immediatly, when loading a file, the first line doesnt render
