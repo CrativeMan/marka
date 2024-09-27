@@ -49,6 +49,7 @@ typedef struct erow {
 } erow;
 
 struct editorConfig {
+  int mode;
   int cx, cy; // cursor x,y
   int rx;     // render x
   int rowoff;
@@ -742,7 +743,8 @@ void editorDrawStatusBar(struct abuf *ab) {
   abAppend(ab, "\x1b[7m", 4);   // invert output
   char status[80], rstatus[80]; // left and right status char*
   // get length's for status bar messages
-  int len = snprintf(status, sizeof(status), "%.20s%s - %d lines",
+  int len = snprintf(status, sizeof(status), "%.10s%.20s%s - %d lines",
+                     (E.mode == INSERT) ? "[insert]" : "[normal]",
                      E.filename ? E.filename : "[No Name]", E.dirty ? "*" : "",
                      E.numrows);
   int rlen =
@@ -967,6 +969,7 @@ void editorProcessKeypress() {
 
 /* init */
 void initEditor() {
+  E.mode = NORMAL;
   E.cx = 0;
   E.cy = 0;
   E.rx = 0;

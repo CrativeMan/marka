@@ -1,6 +1,8 @@
 #ifndef TERM_H
 #define TERM_H
 
+enum editorModes { NORMAL = 0, INSERT };
+
 enum editorHighlight {
   HL_NORMAL = 0,
   HL_COMMENT,
