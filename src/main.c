@@ -19,7 +19,7 @@
 #include "term.h"
 
 /* defines */
-#define PEB_VERSION "1.0"
+#define PEB_VERSION "2.0"
 #define PEB_TAB_STOP 2
 #define CTRL_KEY(k) ((k) & 0x1f)
 
