@@ -125,7 +125,7 @@ void enableRawMode() {
 void editorCommandCallback(char *query, int key) {
   if (key == '\r') {
     switch (query[0]) {
-    case 'w': {
+    case 'w': { // save actions
       editorSave();
       if (query[1] == 'q') {
         write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen
@@ -133,7 +133,7 @@ void editorCommandCallback(char *query, int key) {
         exit(0);
       }
     } break;
-    case 'q': {
+    case 'q': { // quit actions
       if (!E.dirty || query[1] == '!') {
         write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen
         write(STDOUT_FILENO, "\x1b[H", 3);  // reset curser
@@ -161,18 +161,20 @@ int is_seperator(int c) {
 }
 
 void editorUpdateSyntax(erow *row) {
-  row->hl = realloc(row->hl, row->rsize);
-  memset(row->hl, HL_NORMAL, row->size);
+  row->hl = realloc(row->hl, row->rsize); // realloc size for the hl buf
+  memset(row->hl, HL_NORMAL, row->size);  // setting the mem for the hl buf
 
-  if (E.syntax == NULL)
+  if (E.syntax == NULL) // if no syntax return
     return;
 
+  // make local references to the syntax stuff
   char **keywords = E.syntax->keywords;
 
   char *scs = E.syntax->singleline_comment_start;
   char *mcs = E.syntax->multiline_comment_start;
   char *mce = E.syntax->multiline_comment_end;
 
+  // getting lengths of the syntax strings
   int scs_len = scs ? strlen(scs) : 0;
   int mcs_len = mcs ? strlen(mcs) : 0;
   int mce_len = mce ? strlen(mce) : 0;
@@ -182,10 +184,14 @@ void editorUpdateSyntax(erow *row) {
   int in_comment = (row->idx > 0 && E.row[row->idx - 1].hl_open_comment);
 
   int i = 0;
+  // loop through all the chars in the row
   while (i < row->size) {
-    char c = row->render[i];
-    unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+    char c = row->render[i]; // current char
+    unsigned char prev_hl =
+        (i > 0) ? row->hl[i - 1] : HL_NORMAL; // get prev hihglight
 
+    // highlight singleline comments
+    // if not in string and not in comment
     if (scs_len && !in_string && !in_comment) {
       if (!strncmp(&row->render[i], scs, scs_len)) {
         memset(&row->hl[i], HL_COMMENT, row->size - i);
@@ -193,6 +199,7 @@ void editorUpdateSyntax(erow *row) {
       }
     }
 
+    // highlight multiline comment
     if (mcs_len && mce_len && !in_string) {
       if (in_comment) {
         row->hl[i] = HL_MLCOMMENT;
@@ -214,6 +221,7 @@ void editorUpdateSyntax(erow *row) {
       }
     }
 
+    // highlight strings
     if (E.syntax->flags & HL_HIGHLIGHT_STRINGS) {
       if (in_string) {
         row->hl[i] = HL_STRING;
@@ -237,6 +245,7 @@ void editorUpdateSyntax(erow *row) {
       }
     }
 
+    // highlight numbers
     if (E.syntax->flags & HL_HIGHLIGHT_NUMBERS) {
       if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
           (c == '.' && prev_hl == HL_NUMBER)) {
@@ -278,6 +287,7 @@ void editorUpdateSyntax(erow *row) {
     editorUpdateSyntax(&E.row[row->idx + 1]);
 }
 
+// turn enum into color code
 int editorSyntaxToColor(int hl) {
   switch (hl) {
   case HL_COMMENT:
@@ -773,16 +783,16 @@ void editorDrawRows(struct abuf *ab) {
 }
 
 void editorDrawStatusBar(struct abuf *ab) {
-  // abAppend(ab, "\x1b[7m", 4);   // invert output
+  abAppend(ab, "\x1b[7m", 4);   // invert output
   char status[80], rstatus[80]; // left and right status char*
   // get length's for status bar messages
   int len = snprintf(status, sizeof(status), "%.10s%.20s%s - %d lines",
                      (E.mode == INSERT) ? "[insert]" : "[normal]",
                      E.filename ? E.filename : "[No Name]", E.dirty ? "*" : "",
                      E.numrows);
-  int rlen =
-      snprintf(rstatus, sizeof(rstatus), "%s | %d:%d/",
-               E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.cx, E.numrows);
+  int rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d:%d/%d",
+                      E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.cx,
+                      E.numrows);
   if (len > E.screencols) // cap length to screencols
     len = E.screencols;
   abAppend(ab, status, len);   // append left msg
@@ -1000,9 +1010,9 @@ void editorProcessKeypress() {
       E.mode = INSERT;
       break;
     case 'o':
-        editorInsertNewline(0);
-        E.mode=INSERT;
-        break;
+      editorInsertNewline(0);
+      E.mode = INSERT;
+      break;
 
     case HOME_KEY:
       E.cx = 0;
