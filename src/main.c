@@ -143,7 +143,7 @@ void editorCommandCallback(char *query, int key) {
       }
     } break;
     default:
-      printf("Unrecognized command.");
+      editorSetStatusMessage("Unknown command!");
       break;
     }
   }
@@ -472,8 +472,8 @@ void editorInsertChar(int c) {
   E.cx++; // set cursor behind the new char
 }
 
-void editorInsertNewline() {
-  if (E.cx == 0) {
+void editorInsertNewline(int mode) {
+  if (E.cx == 0 || mode == 0) {
     editorInsertRow(E.cy, "", 0);
   } else {
     erow *row = &E.row[E.cy];
@@ -781,8 +781,8 @@ void editorDrawStatusBar(struct abuf *ab) {
                      E.filename ? E.filename : "[No Name]", E.dirty ? "*" : "",
                      E.numrows);
   int rlen =
-      snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
-               E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.numrows);
+      snprintf(rstatus, sizeof(rstatus), "%s | %d:%d/",
+               E.syntax ? E.syntax->filetype : "no ft", E.cy + 1, E.cx, E.numrows);
   if (len > E.screencols) // cap length to screencols
     len = E.screencols;
   abAppend(ab, status, len);   // append left msg
@@ -929,7 +929,7 @@ void editorProcessKeypress() {
   if (E.mode == INSERT) {
     switch (c) {
     case '\r':
-      editorInsertNewline();
+      editorInsertNewline(1);
       break;
 
     case CTRL_KEY('s'):
@@ -999,6 +999,10 @@ void editorProcessKeypress() {
     case 'i':
       E.mode = INSERT;
       break;
+    case 'o':
+        editorInsertNewline(0);
+        E.mode=INSERT;
+        break;
 
     case HOME_KEY:
       E.cx = 0;

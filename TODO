@@ -1,4 +1,4 @@
 * markdown to pdf 
 * line numbers
 * markdown syntax highlighting
-* BUG: fix immediatly, when loading a file, the first line doesnt render
+* BUG: when scrolling up out of the screen it goes into the status bar lol
