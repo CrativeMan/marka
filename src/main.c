@@ -830,7 +830,7 @@ void editorRefreshScreen() {
   editorDrawStatusBar(&ab);
   editorDrawMessageBar(&ab);
 
-  char buf[32];
+  char buf[64];
   // cursor to cx and cy
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1,
            (E.cx - E.coloff) + 1);

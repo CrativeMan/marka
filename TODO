@@ -2,3 +2,6 @@
 * line numbers
 * markdown syntax highlighting
 * BUG: when scrolling up out of the screen it goes into the status bar lol
+  * in refreshScreen oder in editorMoveCursor ist ein fehler
+    da wenn man hoch scrollt ein teil des strings fur das setten des cursors
+    angezeigt wird
