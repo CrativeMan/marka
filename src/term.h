@@ -1,6 +1,7 @@
 #ifndef TERM_H
 #define TERM_H
 
+#include <termios.h>
 enum editorModes { NORMAL = 0, INSERT };
 
 enum editorHighlight {

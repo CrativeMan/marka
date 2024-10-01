@@ -15,17 +15,12 @@
 #include <time.h>
 #include <unistd.h>
 
+// own header  files
 #include "error.h"
 #include "term.h"
+#include "utility.h"
 
 /* defines */
-#define PEB_VERSION "2.0"
-#define PEB_TAB_STOP 2
-#define CTRL_KEY(k) ((k) & 0x1f)
-
-#define HL_HIGHLIGHT_NUMBERS (1 << 0)
-#define HL_HIGHLIGHT_STRINGS (1 << 1)
-
 /* data */
 struct editorSyntax {
   char *filetype;
@@ -156,9 +151,6 @@ void editorCommandPrompt() {
 }
 
 /* syntax highlighting */
-int is_seperator(int c) {
-  return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
-}
 
 void editorUpdateSyntax(erow *row) {
   row->hl = realloc(row->hl, row->rsize); // realloc size for the hl buf
@@ -474,7 +466,6 @@ void editorRowDelChar(erow *row, int at) {
 }
 
 /* editor operations */
-
 void editorInsertChar(int c) {
   if (E.cy == E.numrows) // append row if on new row
     editorInsertRow(E.numrows, "", 0);
@@ -674,33 +665,14 @@ void editorFind() {
   }
 }
 
-/* append buffer */
-struct abuf {
-  char *b;
-  int len;
-};
-
-#define ABUF_INIT {NULL, 0}
-
-void abAppend(struct abuf *ab, const char *s, int len) {
-  // allocate new mem for expanded string
-  char *new = realloc(ab->b, ab->len + len);
-
-  if (new == NULL) // if realloc failed, return
-    return;
-  memcpy(&new[ab->len], s, len);
-  ab->b = new;
-  ab->len += len;
-}
-
-void abFree(struct abuf *ab) { free(ab->b); }
-
 /* output */
-
 void editorScroll() {
   E.rx = 0;
   if (E.cy < E.numrows) { // if cursor is above visible window
     E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
+  }
+  if (E.cy < E.rowoff) {
+      E.rowoff = E.cy;
   }
   if (E.cy >= E.rowoff + E.screenrows) { // if cursors is past the botom
     E.rowoff = E.cy - E.screenrows + 1;
