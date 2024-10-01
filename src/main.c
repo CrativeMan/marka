@@ -473,8 +473,10 @@ void editorInsertChar(int c) {
   E.cx++; // set cursor behind the new char
 }
 
-void editorInsertNewline(int mode) {
-  if (E.cx == 0 || mode == 0) {
+void editorInsertNewline(int context) {
+  if (context == 1) {
+    editorInsertRow(E.cy + 1, "", 0);
+  } else if (E.cx == 0) {
     editorInsertRow(E.cy, "", 0);
   } else {
     erow *row = &E.row[E.cy];
@@ -672,7 +674,7 @@ void editorScroll() {
     E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
   }
   if (E.cy < E.rowoff) {
-      E.rowoff = E.cy;
+    E.rowoff = E.cy;
   }
   if (E.cy >= E.rowoff + E.screenrows) { // if cursors is past the botom
     E.rowoff = E.cy - E.screenrows + 1;
@@ -911,7 +913,7 @@ void editorProcessKeypress() {
   if (E.mode == INSERT) {
     switch (c) {
     case '\r':
-      editorInsertNewline(1);
+      editorInsertNewline(0);
       break;
 
     case CTRL_KEY('s'):
@@ -981,10 +983,10 @@ void editorProcessKeypress() {
     case 'i':
       E.mode = INSERT;
       break;
-    case 'o':
-      editorInsertNewline(0);
+    case 'o': {
+      editorInsertNewline(1);
       E.mode = INSERT;
-      break;
+    } break;
 
     case HOME_KEY:
       E.cx = 0;
